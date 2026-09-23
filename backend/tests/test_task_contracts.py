@@ -172,3 +172,13 @@ def test_catalog_teams_and_proposal_selection_flow():
 ])
 def test_proposal_rejects_invalid_relationships(payload):
     assert client.post("/proposals", json=payload).status_code == 404
+
+
+def test_profile_contract_and_editable_demo_profile():
+    profile = client.get("/profiles/demo-business-1")
+    assert profile.status_code == 200
+    assert profile.json()["role"] == "business"
+    updated = client.patch("/profiles/demo-business-1", json={"city": "Санкт-Петербург"})
+    assert updated.status_code == 200
+    assert updated.json()["city"] == "Санкт-Петербург"
+    assert client.post("/profiles", json={"role": "invalid", "name": "Bad"}).status_code == 422

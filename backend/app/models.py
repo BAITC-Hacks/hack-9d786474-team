@@ -58,3 +58,20 @@ class Proposal(Base):
     status: Mapped[str] = mapped_column(String(20), default="submitted", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc)
+
+
+class Profile(Base):
+    __tablename__ = "profiles"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    role: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    company: Mapped[str] = mapped_column(String(160), default="")
+    headline: Mapped[str] = mapped_column(String(180), default="")
+    description: Mapped[str] = mapped_column(Text, default="")
+    industry: Mapped[str] = mapped_column(String(120), default="")
+    skills: Mapped[list] = mapped_column(JSON, default=list)
+    experience: Mapped[str] = mapped_column(Text, default="")
+    city: Mapped[str] = mapped_column(String(120), default="")
+    contacts: Mapped[dict] = mapped_column(JSON, default=dict)
+    avatar: Mapped[str] = mapped_column(String(500), default="")

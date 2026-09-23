@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from .models import Proposal, Task, Team
+from .models import Proposal, Profile, Task, Team
 
 DEMO_TEAMS = [
     ("Север", "Продуктовая команда", ["Анна", "Илья"], {"email": "north@example.test"}),
@@ -67,4 +67,10 @@ def seed_demo_data(db: Session) -> None:
                 plan="Собрать прототип, проверить сценарий на демо-данных и показать результат.",
                 deadline="2 недели", prototype_link="https://example.test/prototype", status="submitted",
             ))
+    if db.query(Profile).filter(Profile.id.like("demo-business-%")).count() == 0:
+        for index in range(1, 24):
+            db.add(Profile(id=f"demo-business-{index}", role="business", name=f"Business Demo {index}", company=f"Example Studio {index}", description="Demo business profile for the platform presentation.", industry="Services and technology", city="Moscow", contacts={"email": f"business{index}@example.test"}))
+    if db.query(Profile).filter(Profile.id.like("demo-freelancer-%")).count() == 0:
+        for index in range(1, 36):
+            db.add(Profile(id=f"demo-freelancer-{index}", role="freelancer", name=f"Freelancer Demo {index}", headline="AI Integration · Backend Python Developer", description="Demo freelancer profile for the platform presentation.", skills=["Python", "FastAPI", "React", "REST API", "LLM Integration"], experience="Demo experience: integrations and MVP prototypes.", city="Moscow", contacts={"email": f"freelancer{index}@example.test"}))
     db.commit()

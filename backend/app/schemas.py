@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 Status = Literal["draft", "working", "ready", "priority"]
 ProposalStatus = Literal["submitted", "accepted", "rejected"]
+ProfileRole = Literal["business", "freelancer"]
 TaskField = Literal[
     "context_and_need", "data_and_materials", "expected_result",
     "success_criteria", "limitations", "target_users",
@@ -112,3 +113,37 @@ class ProposalRead(BaseModel):
     status: ProposalStatus
     created_at: datetime
     updated_at: datetime
+
+
+class ProfileCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    role: ProfileRole
+    name: str = Field(min_length=1)
+    company: str = ""
+    headline: str = ""
+    description: str = ""
+    industry: str = ""
+    skills: list[str] = []
+    experience: str = ""
+    city: str = ""
+    contacts: dict = {}
+    avatar: str = ""
+
+
+class ProfilePatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str | None = None
+    company: str | None = None
+    headline: str | None = None
+    description: str | None = None
+    industry: str | None = None
+    skills: list[str] | None = None
+    experience: str | None = None
+    city: str | None = None
+    contacts: dict | None = None
+    avatar: str | None = None
+
+
+class ProfileRead(ProfileCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
