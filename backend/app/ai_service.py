@@ -6,9 +6,6 @@ from .schemas import CARD_FIELDS, UNKNOWN_VALUE, Stage1Result, TaskField
 class AIServiceError(RuntimeError):
     """Expected failure while calling or validating the external AI service."""
 
-class AIServiceError(RuntimeError):
-    """Expected failure while calling or validating the external AI service."""
-
 STAGE1_SYSTEM_PROMPT = """Ты — ассистент платформы геймификации бизнес-задач для студентов.
 Твоя цель — помочь представителю бизнеса превратить сырое описание потребности в четкое ТЗ.
 
@@ -77,48 +74,75 @@ def _stub(draft: str) -> dict:
         ],
     }
 
+def _call(client: OpenAI, messages: list[dict]) -> str:
+    try:
+        response = client.chat.completions.create(
+            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            temperature=0,
+            response_format={"type": "json_object"},
+            messages=messages,
+            timeout=float(os.getenv("OPENAI_TIMEOUT_SECONDS", "30")),
+        )
+        return response.choices[0].message.content or ""
+    except Exception as exc:
+        raise AIServiceError(f"Внешний AI недоступен: {exc}") from exc
+
 def analyze_draft(draft: str) -> dict:
     if os.getenv("USE_AI_STUB", "true").lower() == "true":
         return _stub(draft)
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY не задан при USE_AI_STUB=false")
-    client = OpenAI(api_key=api_key)
-    response = client.chat.completions.create(
-        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-        temperature=0,
-        response_format={"type": "json_object"},
-        messages=[{"role": "system", "content": STAGE1_SYSTEM_PROMPT}, {"role": "user", "content": draft}],
-    )
-    raw = response.choices[0].message.content or ""
+        raise AIServiceError("OPENAI_API_KEY не задан при USE_AI_STUB=false")
+    raw = _call(OpenAI(api_key=api_key), [
+        {"role": "system", "content": STAGE1_SYSTEM_PROMPT},
+        {"role": "user", "content": draft},
+    ])
     try:
         return Stage1Result.model_validate_json(raw).model_dump()
     except Exception as exc:
-        raise ValueError(f"AI вернул невалидный JSON stage 1: {exc}") from exc
+        raise AIServiceError(f"AI вернул невалидный JSON stage 1: {exc}") from exc
 
-def assemble_card(draft: str, answers: dict[str, str]) -> dict:
-    if os.getenv("USE_AI_STUB", "true").lower() == "true":
-        fields = {key: answers.get(key, "Не указано (требуется уточнение)") for key in (
-            "data_and_materials", "success_criteria", "business_contact", "interaction_format")}
-        return {"title": draft[:100], "context_and_need": draft, "expected_result": "Не указано (требуется уточнение)",
-                "limitations": "Не указано (требуется уточнение)", "target_users": "Не указано (требуется уточнение)", **fields}
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise RuntimeError("OPENAI_API_KEY не задан при USE_AI_STUB=false")
-    client = OpenAI(api_key=api_key)
-    payload = json.dumps({"draft": draft, "answers": answers}, ensure_ascii=False)
-    response = client.chat.completions.create(
-        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"), temperature=0,
-        response_format={"type": "json_object"},
-        messages=[{"role": "system", "content": STAGE2_SYSTEM_PROMPT}, {"role": "user", "content": payload}],
-    )
-    raw = response.choices[0].message.content or ""
+def _validate_stage2(raw: str) -> dict:
     try:
         data = json.loads(raw)
-        required = ["title", "context_and_need", "data_and_materials", "expected_result", "success_criteria",
-                    "limitations", "target_users", "business_contact", "interaction_format"]
-        if any(key not in data for key in required):
-            raise ValueError("отсутствуют обязательные поля")
-        return data
     except Exception as exc:
-        raise ValueError(f"AI вернул невалидный JSON stage 2: {exc}") from exc
+        raise ValueError(f"stage 2 должен содержать валидный JSON: {exc}") from exc
+    if not isinstance(data, dict):
+        raise ValueError("stage 2 должен быть JSON-объектом")
+    allowed = set(CARD_FIELDS)
+    if set(data) != allowed:
+        raise ValueError("stage 2 содержит неизвестные или отсутствующие поля")
+    for field in CARD_FIELDS:
+        value = data[field]
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"поле {field} должно быть непустой строкой")
+    if len(data["title"]) > 100:
+        raise ValueError("title длиннее 100 символов")
+    return data
+
+def assemble_card(draft: str, answers: dict[TaskField, str]) -> dict:
+    if os.getenv("USE_AI_STUB", "true").lower() == "true":
+        result = {
+            "title": draft[:100] or UNKNOWN_VALUE,
+            "context_and_need": draft or UNKNOWN_VALUE,
+            "data_and_materials": answers.get("data_and_materials", UNKNOWN_VALUE),
+            "expected_result": UNKNOWN_VALUE,
+            "success_criteria": answers.get("success_criteria", UNKNOWN_VALUE),
+            "limitations": UNKNOWN_VALUE,
+            "target_users": UNKNOWN_VALUE,
+            "business_contact": answers.get("business_contact", UNKNOWN_VALUE),
+            "interaction_format": answers.get("interaction_format", UNKNOWN_VALUE),
+        }
+        return _validate_stage2(json.dumps(result, ensure_ascii=False))
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise AIServiceError("OPENAI_API_KEY не задан при USE_AI_STUB=false")
+    payload = json.dumps({"draft": draft, "answers": answers}, ensure_ascii=False)
+    raw = _call(OpenAI(api_key=api_key), [
+        {"role": "system", "content": STAGE2_SYSTEM_PROMPT},
+        {"role": "user", "content": payload},
+    ])
+    try:
+        return _validate_stage2(raw)
+    except Exception as exc:
+        raise AIServiceError(f"AI вернул невалидный JSON stage 2: {exc}") from exc
