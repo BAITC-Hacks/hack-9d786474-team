@@ -23,6 +23,9 @@ export type Task = {
   rating_total: number;
   rating_breakdown: Record<string, number>;
   missing_fields: string[];
+  created_at: string;
+  updated_at: string;
+  confirmed: boolean;
   stage1_result: {
     analyzed_draft: string;
     missing_aspects: string[];
