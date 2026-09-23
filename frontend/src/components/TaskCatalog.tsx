@@ -51,6 +51,7 @@ export function TaskCatalog({ tasks, tagsByTaskId = {}, onViewAndRespond }: Task
       tasks
         .filter((task) => statusFilter === 'all' || task.status === statusFilter)
         .filter((task) => tagFilter === 'all' || (tagsByTaskId[task.id] ?? []).includes(tagFilter))
+        .slice()
         .sort((left, right) => {
           const statusDifference = STATUS_ORDER[left.status] - STATUS_ORDER[right.status];
           return statusDifference || right.rating_total - left.rating_total;

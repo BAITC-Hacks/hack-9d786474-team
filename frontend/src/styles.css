@@ -1,0 +1,7 @@
+:root { font-family: Inter, system-ui, sans-serif; color: #172033; background: #f4f7fb; }
+* { box-sizing: border-box; } body { margin: 0; } button, textarea, input, select { font: inherit; }
+button { cursor: pointer; } .app { min-height: 100vh; } .shell { max-width: 1180px; margin: auto; padding: 24px; }
+nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0; } nav button, .button { border: 0; border-radius: 10px; padding: 10px 16px; background: #4255d4; color: white; font-weight: 700; } nav button.secondary { background: white; color: #4255d4; border: 1px solid #d8def5; }
+.panel, .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 8px 24px #15224a12; margin-bottom: 18px; } .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+label { display: block; font-weight: 700; margin: 12px 0 6px; } input, textarea, select { width: 100%; padding: 10px; border: 1px solid #ccd3e5; border-radius: 8px; background: white; } textarea { min-height: 96px; resize: vertical; }
+.muted { color: #65708a; } .error { color: #a22b3b; background: #fff0f2; padding: 12px; border-radius: 8px; } .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #e8edff; color: #3445a8; font-size: 12px; font-weight: 700; } .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; } .danger { background: #b83c4c; } .success { background: #25855a; }

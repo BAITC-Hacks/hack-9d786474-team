@@ -31,6 +31,7 @@ export type Task = {
     missing_aspects: string[];
     questions: Stage1Question[];
   };
+  original_draft: string;
 };
 
 type TaskFields = Pick<
@@ -133,12 +134,7 @@ export function TaskBuilder({ onConfirm }: TaskBuilderProps) {
     setError('');
     try {
       const updated = await requestJson<Task>(`/tasks/${taskId}`, {
-        answers: {
-          data_and_materials: answers.data_and_materials ?? '',
-          success_criteria: answers.success_criteria ?? '',
-          business_contact: answers.business_contact ?? '',
-          interaction_format: answers.interaction_format ?? '',
-        },
+        answers,
         confirmed: false,
       });
       setTask(updated);

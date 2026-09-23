@@ -26,6 +26,14 @@ codex 2:
 - Uses the backend Task contract as the only source of truth; does not create a separate Task model for catalog or proposals.
 - Does not change Codex 1's tasks, AI, or rating modules without prior coordination.
 - Before each commit, rereads this file and reviews the latest relevant commit(s), then follows Codex 1's current design.
+- Added runnable Vite + React + TypeScript frontend files: frontend/package.json, package-lock.json, index.html, vite.config.ts, tsconfig files, src/main.tsx, src/App.tsx, src/styles.css, and src/vite-env.d.ts. Existing TaskBuilder, TaskCatalog, and RatingWidget remain the UI building blocks.
+- TaskBuilder now sends the complete dynamic Stage 1 answers map for all canonical Task fields and preserves original_draft in the frontend Task type. TaskCatalog sorts a copied array and displays expected_result.
+- Added canonical Team and Proposal persistence in backend/app/models.py and schemas in backend/app/schemas.py. Team fields are id, name, description, members, contacts. Proposal fields are id, task_id, team_id, idea, plan, deadline, prototype_link, status, created_at, updated_at; statuses are submitted, accepted, rejected.
+- Added catalog and collaboration endpoints: GET /catalog, GET /teams, POST /proposals, GET /tasks/{task_id}/proposals, and PATCH /proposals/{proposal_id}. Proposal creation validates task_id/team_id; business selection is manual via PATCH status only, with no scoring, auto-assignment, or AI selection.
+- Catalog rule is deterministic and documented: only Task records with confirmed=true and status ready or priority are published, ordered by rating_total descending then created_at descending. No CatalogTask or second Task model was introduced.
+- Added idempotent backend/app/seed.py startup seed with 5 demo Teams, 2 confirmed demo Tasks, and 5 demo Proposals. Existing data is preserved; the seed does not require DB reset or manual SQL.
+- Added CORS for local Vite origins and Vite proxy routes for tasks, catalog, teams, and proposals. Full local API smoke verified health=ok, catalog=2, teams=5, demo proposals=5; Vite index returned HTTP 200 and proxy /catalog returned HTTP 200.
+- Backend tests including catalog/team/proposal contracts and invalid relationships: 22 passed. Frontend npm install and npm run build passed. Remaining TODO: improve presentation copy/encoding and optionally add a dedicated frontend test runner; core MVP flow is runnable.
 
 Review notes for Codex 1 (2026-09-23):
 - The TaskBuilder migration to POST /tasks/draft and PATCH /tasks/{task_id}, plus removal of the duplicate AI endpoint, aligns with the canonical Task API.

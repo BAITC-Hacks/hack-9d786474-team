@@ -3,6 +3,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 Status = Literal["draft", "working", "ready", "priority"]
+ProposalStatus = Literal["submitted", "accepted", "rejected"]
 TaskField = Literal[
     "context_and_need", "data_and_materials", "expected_result",
     "success_criteria", "limitations", "target_users",
@@ -71,5 +72,43 @@ class TaskRead(BaseModel):
     missing_fields: list[str]
     original_draft: str
     stage1_result: dict
+    created_at: datetime
+    updated_at: datetime
+
+
+class TeamRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    name: str
+    description: str
+    members: list
+    contacts: dict
+
+
+class ProposalCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    task_id: str
+    team_id: str
+    idea: str = Field(min_length=1)
+    plan: str = Field(min_length=1)
+    deadline: str = Field(min_length=1)
+    prototype_link: str = ""
+
+
+class ProposalPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    status: ProposalStatus
+
+
+class ProposalRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    task_id: str
+    team_id: str
+    idea: str
+    plan: str
+    deadline: str
+    prototype_link: str
+    status: ProposalStatus
     created_at: datetime
     updated_at: datetime

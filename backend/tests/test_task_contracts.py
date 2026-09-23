@@ -1,12 +1,16 @@
 import json
 import pytest
 from pydantic import ValidationError
+from fastapi.testclient import TestClient
 
 from app import ai_service
 from app.ai_service import AIServiceError, _call, _validate_stage2, analyze_draft
 from app.models import Task
 from app.schemas import DraftCreate, Stage1Result, TaskPatch
 from app.task_rating import calculate_task_rating
+from app.main import app
+
+client = TestClient(app)
 
 def full_card(value="достаточно длинное значение поля"):
     return {field: value for field in (
@@ -134,3 +138,37 @@ def test_external_ai_exception_is_wrapped():
 
     with pytest.raises(AIServiceError):
         _call(BrokenClient(), [])
+
+
+def test_catalog_teams_and_proposal_selection_flow():
+    catalog = client.get("/catalog")
+    assert catalog.status_code == 200
+    assert catalog.json()
+    assert all(item["confirmed"] and item["status"] in {"ready", "priority"} for item in catalog.json())
+
+    teams = client.get("/teams")
+    assert teams.status_code == 200
+    assert len(teams.json()) == 5
+
+    task_id = catalog.json()[0]["id"]
+    team_id = teams.json()[0]["id"]
+    proposal = client.post("/proposals", json={
+        "task_id": task_id, "team_id": team_id, "idea": "Тестовая идея предложения",
+        "plan": "Проверить прототип и собрать обратную связь.", "deadline": "1 неделя",
+        "prototype_link": "https://example.test/test",
+    })
+    assert proposal.status_code == 201
+    proposal_id = proposal.json()["id"]
+    assert client.get(f"/tasks/{task_id}/proposals").json()
+
+    updated = client.patch(f"/proposals/{proposal_id}", json={"status": "accepted"})
+    assert updated.status_code == 200
+    assert updated.json()["status"] == "accepted"
+
+
+@pytest.mark.parametrize("payload", [
+    {"task_id": "missing", "team_id": "demo-team-1", "idea": "x", "plan": "y", "deadline": "z"},
+    {"task_id": "demo-task-appointment", "team_id": "missing", "idea": "x", "plan": "y", "deadline": "z"},
+])
+def test_proposal_rejects_invalid_relationships(payload):
+    assert client.post("/proposals", json=payload).status_code == 404
