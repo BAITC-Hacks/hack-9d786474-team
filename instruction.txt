@@ -1,6 +1,12 @@
 codex 1:
 - Owns backend tasks, AI, rating, and the canonical Task contract.
 - Keeps rating deterministic and computed by the backend.
+- Updated backend/app/schemas.py, backend/app/ai_service.py, backend/app/routers/tasks.py, backend/requirements.txt, and added backend/tests/test_task_contracts.py.
+- Added strict input validation, allowed Stage 1 target fields, Stage 2 card validation, controlled AI failures, and pytest coverage.
+- API contracts remain POST /tasks/draft, PATCH /tasks/{task_id}, and GET /tasks/{task_id}/rating; no new endpoints were added.
+- original_draft and stage1_result remain in TaskRead because frontend workflow uses task.id and stage1_result.questions.
+- Codex 2: do not create a second Task/AI/rating contract; consume the existing snake_case Task API.
+- Integration note: run backend tests before frontend integration; confirmed remains a client confirmation signal and is not an AI-generated field.
 
 codex 2:
 - Owns catalog, proposals, and business selection.
