@@ -37,7 +37,7 @@ const RATING_FIELDS = [
   {
     key: 'users',
     points: 10,
-    label: 'пользователей',
+    label: 'целевых пользователей',
   },
   {
     key: 'businessContact',
