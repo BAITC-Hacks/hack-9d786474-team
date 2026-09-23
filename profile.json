@@ -1,0 +1,285 @@
+{
+  "name": "Yernar Ibadulla",
+
+  "position": "Middle AI Integration & Backend Python Developer",
+
+  "preferred_roles": [
+    "AI Integration Developer",
+    "AI Developer",
+    "AI Automation Developer",
+    "Backend Python Developer",
+    "Python Developer",
+    "Backend Developer",
+    "Integration Developer",
+    "Automation Developer",
+    "FullStack Developer",
+    "ETL Developer",
+    "BI Developer"
+  ],
+
+  "skills": [
+    "Python",
+    "JavaScript",
+    "TypeScript",
+    "HTML5",
+    "CSS3",
+
+    "FastAPI",
+    "Node.js",
+    "REST API",
+    "Webhooks",
+    "Pydantic",
+    "HTTPX",
+    "Playwright",
+    "ngrok",
+
+    "LLM Integration",
+    "LLM",
+    "Local LLM",
+    "LM Studio",
+    "Function Calling",
+    "Prompt Engineering",
+
+    "Knowledge Base Design",
+    "AI Assistants",
+
+    "n8n",
+    "Make",
+    "NextBot",
+    "Workflow Automation",
+    "Browser Automation",
+
+    "amoCRM API",
+    "Google Calendar API",
+    "Google Sheets API",
+    "Kaspi API",
+    "Robokassa API",
+    "GViz API",
+
+    "PostgreSQL",
+    "SQLite",
+    "SQL",
+    "JSON",
+
+    "Git",
+    "GitHub",
+    "Linux",
+    "GitHub Pages",
+
+    "ITSM",
+    "Service Desk",
+    "SLA",
+    "CSAT",
+    "Knowledge Base",
+    "Release Management",
+    "Process Automation",
+    "BI",
+    "Power BI"
+  ],
+
+  "experience": {
+    "level": "Middle",
+    "commercial_experience": true,
+    "commercial_experience_summary": "Commercial experience in ITSM/process automation, AI integration, backend/API integrations and business workflow automation."
+  },
+
+  "commercial_experience": [
+    {
+      "company": "KCOI",
+      "position": "IT Specialist — ITSM & Process Automation",
+      "period": "2024-2025",
+      "technologies": [
+        "Python",
+        "REST API",
+        "ITSM",
+        "Service Desk",
+        "Webhooks",
+        "Git"
+      ],
+      "responsibilities": [
+        "Incident routing automation",
+        "Incident classification by category and priority",
+        "Automatic ticket assignment",
+        "Knowledge Base design",
+        "ITSM process automation",
+        "MTTR optimization",
+        "Release Management",
+        "Pre-release checklist automation",
+        "Business process automation",
+        "Data collection and reporting automation",
+        "SLA metrics",
+        "CSAT metrics"
+      ],
+      "achievements": [
+        "Reduced initial incident response time to 15-20 minutes",
+        "Reduced repeated requests by approximately 30%",
+        "Reduced MTTR by approximately 40-50%",
+        "Accelerated feature releases by approximately 30%",
+        "Reduced manual employee workload by approximately 4-10 hours per week per employee",
+        "Improved SLA compliance to 95%+",
+        "Improved CSAT to 4.8/5"
+      ]
+    },
+
+    {
+      "company": "S-Dental",
+      "position": "AI Integration & Automation Developer",
+      "period": "2025-2026",
+      "technologies": [
+        "Python",
+        "NextBot",
+        "n8n",
+        "Make",
+        "Google Calendar API",
+        "amoCRM API",
+        "Kaspi API",
+        "LLM",
+        "Function Calling"
+      ],
+      "responsibilities": [
+        "AI assistant development",
+        "AI-powered customer communication",
+        "Knowledge Base integration",
+        "Function Calling",
+        "Appointment booking automation",
+        "Appointment rescheduling automation",
+        "Appointment cancellation automation",
+        "Google Calendar integration",
+        "amoCRM integration",
+        "Kaspi payment integration",
+        "Workflow orchestration",
+        "External API error handling",
+        "Fallback scenario implementation"
+      ]
+    },
+
+    {
+      "company": "Кофейня «Штиль»",
+      "position": "Full-Stack / Automation Developer",
+      "period": "2026",
+      "technologies": [
+        "JavaScript",
+        "HTML5",
+        "CSS3",
+        "Google Sheets API",
+        "GViz API",
+        "JSON",
+        "Git",
+        "GitHub Pages"
+      ],
+      "responsibilities": [
+        "Analytics system development",
+        "QR feedback system development",
+        "Employee QR tracking",
+        "Conversion tracking",
+        "Google Sheets data integration",
+        "Administrative dashboard development",
+        "SPA interface development",
+        "Dynamic JSON data parsing"
+      ]
+    }
+  ],
+
+  "selected_projects": [
+    {
+      "name": "JobHunter AI",
+      "role": "Author & Lead Developer",
+      "period": "2026",
+      "technologies": [
+        "Python",
+        "Playwright",
+        "LM Studio",
+        "HTTPX",
+        "SQLite",
+        "Rule-based Engine"
+      ],
+      "capabilities": [
+        "Modular Python backend",
+        "Vacancy collection",
+        "Vacancy filtering",
+        "LLM-based scoring",
+        "Rule-based safety engine",
+        "Cover letter generation",
+        "Browser automation",
+        "Persistent browser sessions",
+        "JSON recovery",
+        "Vacancy deduplication",
+        "Automatic cover letter language detection"
+      ]
+    }
+  ],
+
+  "core_strengths": [
+    "AI integrations",
+    "LLM integrations",
+    "Backend development with Python",
+    "REST API integrations",
+    "Webhooks",
+    "Function Calling",
+    "AI assistants",
+    "Business process automation",
+    "CRM integrations",
+    "Payment integrations",
+    "Calendar integrations",
+    "Workflow automation",
+    "Browser automation",
+    "ITSM automation",
+    "Knowledge Base systems",
+    "Backend architecture",
+    "Integration reliability",
+    "Fallback and error handling"
+  ],
+
+  "languages": {
+    "Russian": "Fluent",
+    "Kazakh": "Native",
+    "English": "B2 (IELTS Academic 6.5)"
+  },
+
+  "location": {
+    "city": "Astana",
+    "country": "Kazakhstan"
+  },
+
+  "salary_min": 300000,
+
+  "work_preferences": {
+    "office": [
+      "Astana"
+    ],
+    "remote": [
+      "Any city"
+    ],
+    "hybrid": [
+      "Astana"
+    ]
+  },
+
+  "experience_policy": {
+    "target_level": "Middle",
+    "minimum_level": "Junior+",
+    "1-3_years": "acceptable",
+    "3_plus_years": "evaluate_if_role_fit_is_strong",
+    "5_plus_years": "usually_skip_unless_requirements_are_flexible",
+    "senior": "skip",
+    "lead": "skip"
+  },
+
+  "forbidden_roles": [
+    "Senior",
+    "Lead",
+    "Principal",
+    "Staff",
+    "Director",
+    "CIO",
+    "CTO",
+    "Risk Manager",
+    "HR",
+    "Driver",
+    "Manual QA",
+    "Technical Support",
+    "System Administrator",
+    "pure Frontend",
+    "non-IT"
+  ]
+}

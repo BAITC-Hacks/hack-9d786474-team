@@ -1,0 +1,6 @@
+venv/
+__pycache__/
+hh_session/
+filtered.json
+results.jsonl
+*.pyc
