@@ -65,6 +65,7 @@ class TaskRead(BaseModel):
     business_contact: str
     interaction_format: str
     status: Status
+    confirmed: bool
     rating_total: int
     rating_breakdown: dict
     missing_fields: list[str]
