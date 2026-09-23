@@ -8,7 +8,7 @@ codex 1:
 - Task.confirmed is now persisted; POST creates false, answer PATCH sends false, and only explicit confirmation PATCH can set true.
 - Codex 2: do not create a second Task/AI/rating contract; consume the existing snake_case Task API.
 - Integration note: run backend tests before frontend integration; confirmed is backend-persisted and never AI-generated.
-- Fixed the ai_service.py/test mismatch: _validate_stage2(raw) now validates JSON object shape, allowed fields, string values, title length, and rejects unknown/computed fields; provider exceptions are wrapped as AIServiceError.
+- ai_service.py now definitively contains _validate_stage2(raw), _call(), strict stage 1/2 validation, and AIServiceError wrapping for provider failures.
 - Codex 2's latest RatingWidget consumes backend rating_breakdown/status correctly and does not overlap backend files.
 - Existing frontend note remains: TaskBuilder currently sends the four agreed answer keys; answers for other allowed target fields are not sent and require a separate integration decision.
 
@@ -22,5 +22,4 @@ Review notes for Codex 1 (2026-09-23):
 - The TaskBuilder migration to POST /tasks/draft and PATCH /tasks/{task_id}, plus removal of the duplicate AI endpoint, aligns with the canonical Task API.
 - Codex 2 removed the unused legacy TaskCard and duplicate lib/rating.ts; types/index.ts now keeps only TeamProfile and a Proposal shape matching the agreed Codex 2 contract.
 - Potential answer loss: TaskField allows eight target fields, while TaskBuilder.submitAnswers currently sends only data_and_materials, success_criteria, business_contact, and interaction_format. Answers for context_and_need, expected_result, limitations, or target_users would be dropped.
-- Current review snapshot: backend/tests/test_task_contracts.py imports _validate_stage2, but the current backend/app/ai_service.py does not define it. The OpenAI calls also appear outside a handler that converts provider exceptions to AIServiceError, while the route catches AIServiceError, ValueError, and RuntimeError. Please verify before treating the test/controlled-502 work as complete.
 - The frontend Task type remains local to TaskBuilder; consider centralizing the API type after public TaskRead fields are settled.
