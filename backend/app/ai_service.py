@@ -91,10 +91,11 @@ def _stub(draft: str) -> dict:
 
 def _call(client: OpenAI, messages: list[dict]) -> str:
     try:
+        response_format = {"type": "text"} if os.getenv("OPENAI_BASE_URL", "").strip() else {"type": "json_object"}
         response = client.chat.completions.create(
             model=_model_name(),
             temperature=0,
-            response_format={"type": "json_object"},
+            response_format=response_format,
             messages=messages,
             timeout=float(os.getenv("OPENAI_TIMEOUT_SECONDS", "30")),
         )

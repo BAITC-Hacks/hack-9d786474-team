@@ -17,6 +17,9 @@ codex 1:
 - LM Studio demo configuration is supported without OpenAI credits: OPENAI_BASE_URL=http://127.0.0.1:1234/v1, OPENAI_API_KEY=lm-studio, and OPENAI_MODEL set to a loaded LM Studio model ID. LM Studio /v1/models was verified locally and exposed qwen/qwen3-vl-8b, qwen/qwen2.5-coder-14b, and text-embedding-nomic-embed-text-v1.5.
 - No Task contract, endpoint, AI system prompt, stub behavior, or separate AI service was added. Added a unit test proving base_url and model configuration without external network calls.
 - Verification after the AI configuration change: backend pytest 19 passed. Remaining demo step is to run the existing POST /tasks/draft and PATCH /tasks/{task_id} flow with LM Studio loaded and the environment variables configured.
+- Real LM Studio end-to-end smoke test completed with USE_AI_STUB=false, OPENAI_BASE_URL=http://127.0.0.1:1234/v1, OPENAI_API_KEY=lm-studio, and OPENAI_MODEL=qwen/qwen3-vl-8b. Stage 1 POST /tasks/draft returned valid analyzed_draft, missing_aspects, and 3 questions; Stage 2 PATCH returned a populated Task card; GET /tasks/{task_id}/rating returned rating_total=80 and the Task status was ready; confirmed remained false.
+- LM Studio required response_format type text instead of json_object. Existing _call now selects text only when OPENAI_BASE_URL is configured, preserving json_object for the standard OpenAI endpoint; prompts, endpoints, Task contract, and USE_AI_STUB=true behavior remain unchanged.
+- Full backend smoke-test verification: pytest backend/tests -q passed after the compatibility change. The smoke-test task used only local test-process data and no OpenAI API key or credits.
 
 codex 2:
 - Owns catalog, proposals, and business selection.
