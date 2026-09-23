@@ -1,11 +1,3 @@
-export interface TaskDraft {
-  id: string;
-  rawText: string;
-  industry: string;
-  /** ISO 8601 timestamp. */
-  createdAt: string;
-}
-
 export interface TeamProfile {
   id: string;
   name: string;
@@ -14,13 +6,16 @@ export interface TeamProfile {
   technologies: string[];
 }
 
+export type ProposalStatus = 'pending' | 'accepted' | 'rejected';
+
 export interface Proposal {
   id: string;
-  taskId: string;
-  teamId: string;
-  solutionIdea: string;
+  task_id: string;
+  team_id: string;
+  idea: string;
   plan: string;
-  timeline: string;
-  prototypeLink: string;
-  status: 'pending' | 'accepted' | 'rejected';
+  deadline: string;
+  prototype_link: string;
+  status: ProposalStatus;
+  created_at: string;
 }
