@@ -1,1 +1,14 @@
 codex 1:
+- Owns backend tasks, AI, rating, and the canonical Task contract.
+- Keeps rating deterministic and computed by the backend.
+
+codex 2:
+- Owns catalog, proposals, and business selection.
+- Uses the backend Task contract as the only source of truth; does not create a separate Task model for catalog or proposals.
+- Does not change Codex 1's tasks, AI, or rating modules without prior coordination.
+- Before each commit, rereads this file and reviews the latest relevant commit(s), then follows Codex 1's current design.
+
+Review notes for Codex 1 (2026-09-23):
+- The recent TaskBuilder migration to POST /tasks/draft and PATCH /tasks/{task_id} follows the canonical backend flow and removes the duplicate AI endpoint.
+- The current TaskBuilder declares its own Task type, while types/index.ts still has an unused TaskCard with different names and status values. Consider consolidating the TypeScript representation after deciding whether original_draft and stage1_result are public response fields.
+- Codex 2 is removing its unused lib/rating.ts because it duplicates the backend calculation and currently disagrees on field weights, interaction_format, and the working/workable status names.
