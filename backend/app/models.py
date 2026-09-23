@@ -43,6 +43,9 @@ class Team(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     members: Mapped[list] = mapped_column(JSON, default=list)
     contacts: Mapped[dict] = mapped_column(JSON, default=dict)
+    interests: Mapped[list] = mapped_column(JSON, default=list)
+    skills: Mapped[list] = mapped_column(JSON, default=list)
+    technologies: Mapped[list] = mapped_column(JSON, default=list)
 
 
 class Proposal(Base):

@@ -1,4 +1,5 @@
 import json
+import uuid
 import pytest
 from pydantic import ValidationError
 from fastapi.testclient import TestClient
@@ -6,6 +7,7 @@ from fastapi.testclient import TestClient
 from app import ai_service
 from app.ai_service import AIServiceError, _call, _validate_stage2, analyze_draft
 from app.models import Task
+from app.database import SessionLocal
 from app.schemas import DraftCreate, Stage1Result, TaskPatch
 from app.task_rating import calculate_task_rating
 from app.main import app
@@ -144,11 +146,13 @@ def test_catalog_teams_and_proposal_selection_flow():
     catalog = client.get("/catalog")
     assert catalog.status_code == 200
     assert catalog.json()
-    assert all(item["confirmed"] and item["status"] in {"ready", "priority"} for item in catalog.json())
+    assert all(item["confirmed"] for item in catalog.json())
+    assert len([item for item in catalog.json() if item["id"].startswith("demo-task-")]) >= 5
 
     teams = client.get("/teams")
     assert teams.status_code == 200
     assert len(teams.json()) == 5
+    assert all(team["name"] and team["interests"] and team["skills"] and team["technologies"] for team in teams.json())
 
     task_id = catalog.json()[0]["id"]
     team_id = teams.json()[0]["id"]
@@ -164,6 +168,36 @@ def test_catalog_teams_and_proposal_selection_flow():
     updated = client.patch(f"/proposals/{proposal_id}", json={"status": "accepted"})
     assert updated.status_code == 200
     assert updated.json()["status"] == "accepted"
+
+
+def test_catalog_includes_confirmed_low_rating_and_excludes_unconfirmed():
+    low_id = str(uuid.uuid4())
+    hidden_id = str(uuid.uuid4())
+    low_values = {
+        "context_and_need": "Демонстрационная задача с известным контекстом для теста каталога.",
+        "expected_result": "Прототип результата для проверки публикации задачи с низким рейтингом.",
+    }
+    low_rating = calculate_task_rating(low_values)
+    full_values = full_card()
+    hidden_rating = calculate_task_rating(full_values)
+    assert low_rating["rating_total"] == 35
+    with SessionLocal() as db:
+        db.add(Task(id=low_id, title="Подтверждённая задача 35", confirmed=True, **low_values, **low_rating))
+        db.add(Task(id=hidden_id, confirmed=False, **full_values, **hidden_rating))
+        db.commit()
+        try:
+            catalog = client.get("/catalog")
+            assert catalog.status_code == 200
+            ids = [item["id"] for item in catalog.json()]
+            assert low_id in ids
+            assert hidden_id not in ids
+            assert [item["rating_total"] for item in catalog.json()] == sorted(
+                [item["rating_total"] for item in catalog.json()], reverse=True
+            )
+        finally:
+            db.delete(db.get(Task, low_id))
+            db.delete(db.get(Task, hidden_id))
+            db.commit()
 
 
 @pytest.mark.parametrize("payload", [

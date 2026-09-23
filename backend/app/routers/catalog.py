@@ -10,10 +10,10 @@ router = APIRouter(prefix="/catalog", tags=["catalog"])
 
 @router.get("", response_model=list[TaskRead])
 def get_catalog(db: Session = Depends(get_db)):
-    """Published tasks are explicitly confirmed and ready or priority."""
+    """Every explicitly confirmed task is visible, regardless of rating/status."""
     return (
         db.query(Task)
-        .filter(Task.confirmed.is_(True), Task.status.in_(("ready", "priority")))
+        .filter(Task.confirmed.is_(True))
         .order_by(Task.rating_total.desc(), Task.created_at.desc())
         .all()
     )

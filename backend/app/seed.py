@@ -1,13 +1,15 @@
 from sqlalchemy.orm import Session
 
 from .models import Proposal, Profile, Task, Team
+from .schemas import UNKNOWN_VALUE
+from .task_rating import calculate_task_rating
 
 DEMO_TEAMS = [
-    ("Север", "Продуктовая команда", ["Анна", "Илья"], {"email": "north@example.test"}),
-    ("Вектор", "Команда автоматизации", ["Мария", "Олег"], {"email": "vector@example.test"}),
-    ("Пульс", "Команда клиентского опыта", ["Нина", "Роман"], {"email": "pulse@example.test"}),
-    ("Маяк", "Команда аналитики", ["Елена", "Павел"], {"email": "mayak@example.test"}),
-    ("Контур", "Команда прототипирования", ["София", "Денис"], {"email": "contour@example.test"}),
+    ("Север", "Продуктовая команда", ["Анна", "Илья"], {"email": "north@example.test"}, ["образование", "сервисы"], ["исследование пользователей", "прототипирование"], ["React", "Python"]),
+    ("Вектор", "Команда автоматизации", ["Мария", "Олег"], {"email": "vector@example.test"}, ["автоматизация", "малый бизнес"], ["API", "интеграции"], ["FastAPI", "Python"]),
+    ("Пульс", "Команда клиентского опыта", ["Нина", "Роман"], {"email": "pulse@example.test"}, ["клиентский сервис"], ["UX", "тестирование"], ["React", "TypeScript"]),
+    ("Маяк", "Команда аналитики", ["Елена", "Павел"], {"email": "mayak@example.test"}, ["аналитика", "данные"], ["визуализация", "анализ данных"], ["Python", "SQL"]),
+    ("Контур", "Команда прототипирования", ["София", "Денис"], {"email": "contour@example.test"}, ["цифровые продукты"], ["дизайн интерфейсов", "разработка MVP"], ["React", "FastAPI"]),
 ]
 
 DEMO_TASKS = [
@@ -22,9 +24,7 @@ DEMO_TASKS = [
         "target_users": "Пациенты стоматологии и сотрудники, отвечающие за запись.",
         "business_contact": "Для демо контакт со стороны бизнеса не указан.",
         "interaction_format": "Еженедельная переписка и демонстрация прототипа.",
-        "status": "priority", "confirmed": True, "rating_total": 100,
-        "rating_breakdown": {"context_and_need": 20, "data_and_materials": 20, "expected_result": 15, "success_criteria": 15, "limitations": 10, "target_users": 10, "business_contact_and_interaction_format": 10},
-        "missing_fields": [], "original_draft": "Демо-задача про запись пациентов.",
+        "confirmed": True, "original_draft": "Демо-задача про запись пациентов.",
         "stage1_result": {"analyzed_draft": "Демо", "missing_aspects": [], "questions": []},
     },
     {
@@ -38,9 +38,49 @@ DEMO_TASKS = [
         "target_users": "Клиенты и сотрудники первой линии поддержки.",
         "business_contact": "Для демо контакт со стороны бизнеса не указан.",
         "interaction_format": "Асинхронные комментарии и короткая демонстрация.",
-        "status": "ready", "confirmed": True, "rating_total": 100,
-        "rating_breakdown": {"context_and_need": 20, "data_and_materials": 20, "expected_result": 15, "success_criteria": 15, "limitations": 10, "target_users": 10, "business_contact_and_interaction_format": 10},
-        "missing_fields": [], "original_draft": "Демо-задача про поддержку.",
+        "confirmed": True, "original_draft": "Демо-задача про поддержку.",
+        "stage1_result": {"analyzed_draft": "Демо", "missing_aspects": [], "questions": []},
+    },
+    {
+        "id": "demo-task-events",
+        "title": "Планирование мероприятий сообщества",
+        "context_and_need": "Небольшому сообществу сложно собирать заявки на локальные мероприятия в одном месте.",
+        "data_and_materials": UNKNOWN_VALUE,
+        "expected_result": "Команда подготовит понятный прототип страницы с перечнем мероприятий и заявками.",
+        "success_criteria": UNKNOWN_VALUE,
+        "limitations": UNKNOWN_VALUE,
+        "target_users": UNKNOWN_VALUE,
+        "business_contact": UNKNOWN_VALUE,
+        "interaction_format": UNKNOWN_VALUE,
+        "confirmed": True, "original_draft": "Демо-задача про мероприятия.",
+        "stage1_result": {"analyzed_draft": "Демо", "missing_aspects": [], "questions": []},
+    },
+    {
+        "id": "demo-task-inventory",
+        "title": "Учёт остатков для мастерской",
+        "context_and_need": "Мастерская вручную сверяет остатки расходных материалов и иногда обнаруживает нехватку поздно.",
+        "data_and_materials": "Для демо есть обезличенная таблица материалов и пример приходных записей.",
+        "expected_result": UNKNOWN_VALUE,
+        "success_criteria": UNKNOWN_VALUE,
+        "limitations": "Прототип работает только на демонстрационных данных без подключения к учётной системе.",
+        "target_users": "Сотрудники мастерской, которые принимают материалы и следят за остатками.",
+        "business_contact": UNKNOWN_VALUE,
+        "interaction_format": UNKNOWN_VALUE,
+        "confirmed": True, "original_draft": "Демо-задача про остатки материалов.",
+        "stage1_result": {"analyzed_draft": "Демо", "missing_aspects": [], "questions": []},
+    },
+    {
+        "id": "demo-task-feedback",
+        "title": "Сбор отзывов после мероприятия",
+        "context_and_need": "Организаторы получают обратную связь в разных каналах и хотят видеть ответы в одном месте.",
+        "data_and_materials": "Доступны обезличенные примеры отзывов и тестовый список прошедших мероприятий.",
+        "expected_result": "Нужен прототип формы обратной связи и страницы просмотра собранных ответов.",
+        "success_criteria": "На демо можно отправить отзыв и увидеть его в общем списке без ручного переноса.",
+        "limitations": "Доступ к реальным контактам участников и внешним сервисам для демо не предоставляется.",
+        "target_users": UNKNOWN_VALUE,
+        "business_contact": UNKNOWN_VALUE,
+        "interaction_format": UNKNOWN_VALUE,
+        "confirmed": True, "original_draft": "Демо-задача про отзывы.",
         "stage1_result": {"analyzed_draft": "Демо", "missing_aspects": [], "questions": []},
     },
 ]
@@ -48,16 +88,23 @@ DEMO_TASKS = [
 
 def seed_demo_data(db: Session) -> None:
     teams = []
-    for index, (name, description, members, contacts) in enumerate(DEMO_TEAMS, start=1):
+    for index, (name, description, members, contacts, interests, skills, technologies) in enumerate(DEMO_TEAMS, start=1):
         team_id = f"demo-team-{index}"
         team = db.get(Team, team_id)
         if not team:
-            team = Team(id=team_id, name=name, description=description, members=members, contacts=contacts)
+            team = Team(id=team_id, name=name, description=description, members=members, contacts=contacts, interests=interests, skills=skills, technologies=technologies)
             db.add(team)
+        else:
+            if not team.interests:
+                team.interests = interests
+            if not team.skills:
+                team.skills = skills
+            if not team.technologies:
+                team.technologies = technologies
         teams.append(team)
     for values in DEMO_TASKS:
         if not db.get(Task, values["id"]):
-            db.add(Task(**values))
+            db.add(Task(**values, **calculate_task_rating(values)))
     db.flush()
     if db.query(Proposal).filter(Proposal.id.like("demo-proposal-%")).count() == 0:
         for index, team in enumerate(teams, start=1):

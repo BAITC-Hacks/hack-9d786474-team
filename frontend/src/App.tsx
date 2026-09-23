@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { RatingWidget } from './components/RatingWidget';
 import { TaskBuilder, type Task } from './components/TaskBuilder';
-import { TaskCatalog } from './components/TaskCatalog';
 
 type Role = 'business' | 'freelancer';
 type Profile = { id: string; role: Role; name: string; company: string; headline: string; description: string; industry: string; skills: string[]; experience: string; city: string; contacts: Record<string, string>; avatar: string };
@@ -21,10 +20,38 @@ export default function App() {
     localStorage.setItem('demo-theme', theme);
   }, [theme]);
   const [screen, setScreen] = useState<Screen>('home'); const [profile, setProfile] = useState<Profile | null>(null); const [tasks, setTasks] = useState<Task[]>([]); const [teams, setTeams] = useState<Team[]>([]); const [proposals, setProposals] = useState<Proposal[]>([]); const [selectedTask, setSelectedTask] = useState<Task | null>(null); const [error, setError] = useState(''); const [loading, setLoading] = useState(false);
-  async function loadData(nextRole = role) { setLoading(true); setError(''); try { const catalog = await api<Task[]>('/catalog'); setTasks(catalog); setTeams(await api<Team[]>('/teams')); setProfile(await api<Profile>(`/profiles/${profileIds[nextRole]}`)); if (nextRole === 'freelancer') { const all = await Promise.all(catalog.map((task) => api<Proposal[]>(`/tasks/${task.id}/proposals`))); setProposals(all.flat().slice(0, 30)); } } catch (cause) { setError(cause instanceof Error ? cause.message : 'Не удалось загрузить данные'); } finally { setLoading(false); } }
+  async function loadData(nextRole = role) {
+    setLoading(true);
+    setError('');
+    try {
+      const catalog = await api<Task[]>('/catalog');
+      const [loadedTeams, loadedProfile, proposalLists] = await Promise.all([
+        api<Team[]>('/teams'),
+        api<Profile>('/profiles/' + profileIds[nextRole]),
+        Promise.all(catalog.map((task) => api<Proposal[]>('/tasks/' + task.id + '/proposals'))),
+      ]);
+      setTasks(catalog);
+      setTeams(loadedTeams);
+      setProfile(loadedProfile);
+      setProposals(proposalLists.flat());
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Не удалось загрузить данные');
+    } finally {
+      setLoading(false);
+    }
+  }
   useEffect(() => { void loadData(); }, [role]);
   function switchRole(next: Role) { localStorage.setItem('demo-role', next); setRole(next); setScreen('home'); }
-  async function openTask(task: Task) { setSelectedTask(task); setScreen('proposals'); try { setProposals(await api<Proposal[]>(`/tasks/${task.id}/proposals`)); } catch (cause) { setError(cause instanceof Error ? cause.message : 'Не удалось загрузить предложения'); } }
+  async function openTask(task: Task) {
+    setSelectedTask(task);
+    setScreen('proposals');
+    try {
+      const latest = await api<Proposal[]>('/tasks/' + task.id + '/proposals');
+      setProposals((items) => [...items.filter((item) => item.task_id !== task.id), ...latest]);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Не удалось загрузить предложения');
+    }
+  }
   async function updateProposal(id: string, status: Proposal['status']) { const updated = await api<Proposal>(`/proposals/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }); setProposals((items) => items.map((item) => item.id === id ? updated : item)); }
   async function saveProfile(changes: ProfileChanges) {
     if (!profile) throw new Error('Профиль не загружен');
@@ -43,7 +70,7 @@ export default function App() {
           <div><b>{profile?.company || profile?.name || 'Загрузка'}</b><small>{role === 'business' ? 'Бизнес' : 'Фрилансер / команда'}</small></div>
         </div>
         <nav className="side-nav">
-          {nav.map(([id, label]) => <button key={id} className={screen === id ? 'active' : ''} onClick={() => setScreen(id as Screen)}>{label}</button>)}
+          {nav.map(([id, label]) => <button key={id} className={screen === id ? 'active' : ''} onClick={() => { if (id === 'proposals') setSelectedTask(null); setScreen(id as Screen); }}>{label}</button>)}
         </nav>
         <div className="role-switch">
           <small>Текущий профиль</small>
@@ -55,22 +82,19 @@ export default function App() {
         <header className="topbar">
           <div><span className="eyebrow">{role === 'business' ? 'Рабочее пространство бизнеса' : 'Пространство исполнителя'}</span><h1>{screen === 'home' ? 'Добро пожаловать' : nav.find(([id]) => id === screen)?.[1]}</h1></div>
           <div className="topbar-actions">
-            <button className="ghost-button theme-toggle" type="button" aria-label={theme === 'light' ? 'Включить тёмную тему' : 'Включить светлую тему'} onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>{theme === 'light' ? '☾ Тёмная тема' : '☀ Светлая тема'}</button>
+            <button className="theme-toggle" type="button" aria-label={theme === 'light' ? 'Включить тёмную тему' : 'Включить светлую тему'} title={theme === 'light' ? 'Тёмная тема' : 'Светлая тема'} aria-pressed={theme === 'dark'} onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}><span aria-hidden="true">{theme === 'light' ? '☾' : '☀'}</span></button>
             <button className="ghost-button" onClick={() => setScreen('profile')}><span className="avatar small">{profile?.name?.slice(0, 1) || '?'}</span>{profile?.name || 'Профиль'}⌄</button>
           </div>
         </header>
         {error && <div className="alert" role="alert">{error}</div>}
         {loading && <div className="loading-bar" />}
         {role === 'business' && <div className={screen === 'create' ? 'screen-transition' : 'screen-hidden'}><TaskBuilder onConfirm={async () => { await loadData(); setScreen('catalog'); }} /></div>}
-        {screen !== 'create' && (
-          <div key={role + '-' + screen} className="screen-transition">
-            {screen === 'home' && <Home role={role} profile={profile} tasks={tasks} proposals={proposals} accepted={accepted} onCreate={() => setScreen('create')} onCatalog={() => setScreen('catalog')} onProfile={() => setScreen('profile')} />}
-            {(screen === 'catalog' || screen === 'tasks') && <CatalogView tasks={screen === 'tasks' ? tasks.filter((task) => task.confirmed) : tasks} role={role} onOpen={(task) => void openTask(task)} />}
-            {screen === 'proposals' && <ProposalView role={role} task={selectedTask} teams={teams} proposals={proposals} onBack={() => setScreen('catalog')} onStatus={updateProposal} onCreated={(proposal) => setProposals((items) => [proposal, ...items])} />}
-            {screen === 'projects' && <ProjectsView proposals={proposals.filter((item) => item.status === 'accepted')} tasks={tasks} />}
-            {screen === 'profile' && profile && <ProfileView profile={profile} role={role} proposals={proposals} onSave={saveProfile} />}
-          </div>
-        )}
+        <div className={screen === 'home' ? 'screen-transition' : 'screen-hidden'}><Home role={role} profile={profile} tasks={tasks} proposals={proposals} accepted={accepted} onCreate={() => setScreen('create')} onCatalog={() => setScreen('catalog')} onProfile={() => setScreen('profile')} /></div>
+        <div className={screen === 'catalog' ? 'screen-transition' : 'screen-hidden'}><CatalogView tasks={tasks} role={role} onOpen={(task) => void openTask(task)} /></div>
+        {role === 'business' && <div className={screen === 'tasks' ? 'screen-transition' : 'screen-hidden'}><CatalogView tasks={tasks.filter((task) => task.confirmed)} role={role} onOpen={(task) => void openTask(task)} /></div>}
+        <div className={screen === 'proposals' ? 'screen-transition' : 'screen-hidden'}><ProposalView role={role} task={selectedTask} teams={teams} proposals={proposals} onBack={() => setScreen('catalog')} onStatus={updateProposal} onCreated={(proposal) => setProposals((items) => [proposal, ...items])} /></div>
+        {role === 'freelancer' && <div className={screen === 'projects' ? 'screen-transition' : 'screen-hidden'}><ProjectsView proposals={proposals.filter((item) => item.status === 'accepted')} tasks={tasks} /></div>}
+        {profile && <div className={screen === 'profile' ? 'screen-transition' : 'screen-hidden'}><ProfileView profile={profile} role={role} proposals={proposals} onSave={saveProfile} /></div>}
       </main>
     </div>
   );
@@ -80,8 +104,144 @@ function Home({ role, profile, tasks, proposals, accepted, onCreate, onCatalog, 
 
 function CatalogView({ tasks, role, onOpen }: { tasks: Task[]; role: Role; onOpen: (task: Task) => void }) { const [query, setQuery] = useState(''); const [sort, setSort] = useState('rating'); const visible = useMemo(() => tasks.filter((task) => `${task.title} ${task.context_and_need}`.toLowerCase().includes(query.toLowerCase())).slice().sort((a, b) => sort === 'rating' ? b.rating_total - a.rating_total : a.title.localeCompare(b.title)), [tasks, query, sort]); return <><div className="toolbar"><input placeholder="Поиск по задачам…" value={query} onChange={(event) => setQuery(event.target.value)} /><select value={sort} onChange={(event) => setSort(event.target.value)}><option value="rating">Сначала высокий rating</option><option value="title">По названию</option></select></div><div className="task-grid">{visible.map((task) => <article className="task-card" key={task.id}><div className="task-card-top"><span className="pill">{task.status}</span><strong>{task.rating_total}/100</strong></div><h3>{task.title}</h3><p>{task.context_and_need}</p><div className="task-result"><small>Ожидаемый результат</small><span>{task.expected_result}</span></div><button className="text-button" onClick={() => onOpen(task)}>{role === 'business' ? 'Посмотреть отклики →' : 'Посмотреть задачу →'}</button></article>)}</div>{visible.length === 0 && <div className="empty-state">Задач по этому запросу пока нет.</div>}</>; }
 
-function ProposalView({ role, task, teams, proposals, onBack, onStatus, onCreated }: { role: Role; task: Task | null; teams: Team[]; proposals: Proposal[]; onBack: () => void; onStatus: (id: string, status: Proposal['status']) => Promise<void>; onCreated: (proposal: Proposal) => void }) { const [idea, setIdea] = useState(''); const [plan, setPlan] = useState(''); const [deadline, setDeadline] = useState(''); const [link, setLink] = useState(''); const [teamId, setTeamId] = useState(teams[0]?.id || ''); async function submit() { if (!task || !teamId) return; const created = await api<Proposal>('/proposals', { method: 'POST', body: JSON.stringify({ task_id: task.id, team_id: teamId, idea, plan, deadline, prototype_link: link }) }); onCreated(created); setIdea(''); setPlan(''); setDeadline(''); setLink(''); } return <div className="detail-layout">{task && <section className="detail-main"><button className="back-link" onClick={onBack}>← Назад в каталог</button><span className="pill">{task.status} · {task.rating_total}/100</span><h2>{task.title}</h2><p className="lead">{task.context_and_need}</p><Info title="Что нужно получить" value={task.expected_result} /><Info title="Критерии успеха" value={task.success_criteria} /><Info title="Ограничения" value={task.limitations} /><RatingWidget rating_total={task.rating_total} status={task.status} rating_breakdown={task.rating_breakdown} missing_fields={task.missing_fields} /></section>}<aside className="detail-side">{role === 'freelancer' && task && <div className="form-card"><h3>Предложить решение</h3><p className="muted">Команда отправит предложение бизнесу на ручное рассмотрение.</p><select value={teamId} onChange={(event) => setTeamId(event.target.value)}>{teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select><textarea placeholder="Идея решения" value={idea} onChange={(event) => setIdea(event.target.value)} /><textarea placeholder="План работ" value={plan} onChange={(event) => setPlan(event.target.value)} /><input placeholder="Deadline" value={deadline} onChange={(event) => setDeadline(event.target.value)} /><input placeholder="Prototype link" value={link} onChange={(event) => setLink(event.target.value)} /><button className="primary-button full" disabled={!idea || !plan || !deadline} onClick={() => void submit()}>Отправить предложение</button></div>}{proposals.map((proposal) => <article className="proposal-card" key={proposal.id}><div className="proposal-head"><b>{teams.find((team) => team.id === proposal.team_id)?.name || 'Команда'}</b><span className={`status ${proposal.status}`}>{proposal.status}</span></div><h4>{proposal.idea}</h4><p>{proposal.plan}</p><small>Deadline: {proposal.deadline}</small>{role === 'business' && <div className="actions"><button className="accept" onClick={() => void onStatus(proposal.id, 'accepted')}>Accept</button><button className="reject" onClick={() => void onStatus(proposal.id, 'rejected')}>Reject</button></div>}</article>)}</aside></div>; }
-function Info({ title, value }: { title: string; value: string }) { return <div className="info-block"><small>{title}</small><p>{value || 'Пока не указано'}</p></div>; }
+function ProposalView({ role, task, teams, proposals, onBack, onStatus, onCreated }: {
+  role: Role;
+  task: Task | null;
+  teams: Team[];
+  proposals: Proposal[];
+  onBack: () => void;
+  onStatus: (id: string, status: Proposal['status']) => Promise<void>;
+  onCreated: (proposal: Proposal) => void;
+}) {
+  const [idea, setIdea] = useState('');
+  const [plan, setPlan] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [link, setLink] = useState('');
+  const [teamId, setTeamId] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [actionBusyId, setActionBusyId] = useState('');
+  const selectedTeamId = teamId || teams[0]?.id || '';
+  const visibleProposals = task ? proposals.filter((proposal) => proposal.task_id === task.id) : proposals;
+
+  async function submit() {
+    if (!task || !selectedTeamId || !idea.trim() || !plan.trim() || !deadline.trim()) return;
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      const created = await api<Proposal>('/proposals', {
+        method: 'POST',
+        body: JSON.stringify({
+          task_id: task.id, team_id: selectedTeamId,
+          idea: idea.trim(), plan: plan.trim(), deadline: deadline.trim(), prototype_link: link.trim(),
+        }),
+      });
+      onCreated(created);
+      setSent(true);
+    } catch (cause) {
+      setSubmitError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function changeStatus(id: string, status: Proposal['status']) {
+    setActionBusyId(id);
+    setActionError('');
+    try {
+      await onStatus(id, status);
+    } catch (cause) {
+      setActionError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setActionBusyId('');
+    }
+  }
+
+  const proposalCards = (
+    <div className="proposal-list">
+      {visibleProposals.length === 0 && <div className="empty-state">Предложений пока нет.</div>}
+      {visibleProposals.map((proposal) => (
+        <article className="proposal-card" key={proposal.id}>
+          <div className="proposal-head">
+            <b>{teams.find((team) => team.id === proposal.team_id)?.name || 'Команда'}</b>
+            <span className={'status ' + proposal.status}>{proposal.status === 'submitted' ? 'Отправлено' : proposal.status === 'accepted' ? 'Принято' : 'Отклонено'}</span>
+          </div>
+          <h4>{proposal.idea}</h4>
+          <p>{proposal.plan}</p>
+          <div className="proposal-meta"><span>Срок: {proposal.deadline}</span>{proposal.prototype_link && <a href={proposal.prototype_link} target="_blank" rel="noreferrer">Прототип ↗</a>}</div>
+          {role === 'business' && proposal.status === 'submitted' && (
+            <div className="actions">
+              <button className="accept" disabled={actionBusyId === proposal.id} onClick={() => void changeStatus(proposal.id, 'accepted')}>{actionBusyId === proposal.id ? 'Сохранение…' : 'Принять'}</button>
+              <button className="reject" disabled={actionBusyId === proposal.id} onClick={() => void changeStatus(proposal.id, 'rejected')}>Отклонить</button>
+            </div>
+          )}
+        </article>
+      ))}
+    </div>
+  );
+
+  if (!task) {
+    return <section className="proposals-overview">
+      <p className="muted">{role === 'business' ? 'Предложения команд по открытым задачам' : 'Предложения команд в демонстрационном каталоге'}</p>
+      {actionError && <div className="alert" role="alert">Не удалось обновить предложение: {actionError}</div>}
+      {proposalCards}
+    </section>;
+  }
+
+  return <div className="task-detail">
+    <button className="back-link" onClick={onBack}>← Назад в каталог</button>
+    <header className="task-detail-header">
+      <div className="task-detail-heading"><span className="eyebrow">Задача для команды</span><h2>{task.title}</h2>
+        <div className="task-detail-meta"><span>Компания не привязана к задаче</span><span>Отрасль не указана</span></div>
+      </div>
+      <span className="pill">{task.status === 'priority' ? 'Приоритетная' : task.status === 'ready' ? 'Готовая' : task.status === 'working' ? 'Рабочая' : 'Черновик'}</span>
+    </header>
+    <div className="detail-layout">
+      <div className="detail-main">
+        <Info title="Контекст и потребность" value={task.context_and_need} />
+        <Info title="Ожидаемый результат" value={task.expected_result} />
+        <Info title="Критерии успеха" value={task.success_criteria} />
+        <Info title="Ограничения" value={task.limitations} />
+        <Info title="Целевые пользователи" value={task.target_users} />
+        <Info title="Данные и материалы" value={task.data_and_materials} />
+      </div>
+      <aside className="detail-side">
+        <RatingWidget rating_total={task.rating_total} status={task.status} rating_breakdown={task.rating_breakdown} missing_fields={task.missing_fields} />
+        <section className="business-contact-card"><span className="eyebrow">Со стороны бизнеса</span><h3>Контакт и взаимодействие</h3>
+          <p>{task.business_contact}</p><small>{task.interaction_format}</small>
+        </section>
+        {role === 'freelancer' && (sent
+          ? <div className="proposal-success" role="status"><strong>Предложение отправлено</strong><span>Статус: отправлено</span><button className="secondary-button" onClick={() => { setSent(false); setIdea(''); setPlan(''); setDeadline(''); setLink(''); }}>Отправить ещё</button></div>
+          : <section className="form-card proposal-form">
+            <h3>Предложить решение</h3>
+            <p className="muted">Команда отправит предложение бизнесу на ручное рассмотрение.</p>
+            <label htmlFor="proposal-team">Команда</label>
+            <select id="proposal-team" value={selectedTeamId} onChange={(event) => setTeamId(event.target.value)} disabled={submitting || teams.length === 0}>
+              {teams.length === 0 && <option value="">Команды не загружены</option>}
+              {teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+            </select>
+            <label htmlFor="proposal-idea">Идея решения</label>
+            <textarea id="proposal-idea" placeholder="Как вы подойдёте к задаче?" value={idea} onChange={(event) => setIdea(event.target.value)} disabled={submitting} />
+            <label htmlFor="proposal-plan">План работ</label>
+            <textarea id="proposal-plan" placeholder="Основные шаги и результат" value={plan} onChange={(event) => setPlan(event.target.value)} disabled={submitting} />
+            <label htmlFor="proposal-deadline">Срок</label>
+            <input id="proposal-deadline" placeholder="Например, 2 недели" value={deadline} onChange={(event) => setDeadline(event.target.value)} disabled={submitting} />
+            <label htmlFor="proposal-link">Ссылка на прототип (необязательно)</label>
+            <input id="proposal-link" type="url" placeholder="https://..." value={link} onChange={(event) => setLink(event.target.value)} disabled={submitting} />
+            <button className="primary-button full proposal-submit" disabled={submitting || !selectedTeamId || !idea.trim() || !plan.trim() || !deadline.trim()} onClick={() => void submit()}>{submitting ? 'Отправка…' : 'Отправить предложение'}</button>
+            {submitError && <div className="alert" role="alert">Не удалось отправить предложение: {submitError}</div>}
+          </section>)}
+      </aside>
+    </div>
+    <section className="task-proposals"><h3>Предложения команд <span>{visibleProposals.length}</span></h3>
+      {actionError && <div className="alert" role="alert">Не удалось обновить предложение: {actionError}</div>}
+      {proposalCards}
+    </section>
+  </div>;
+}
+function Info({ title, value }: { title: string; value: string }) { const display = !value || value.startsWith('Не указано') ? 'Требует уточнения' : value; return <div className="info-block"><small>{title}</small><p>{display}</p></div>; }
 function ProjectsView({ proposals, tasks }: { proposals: Proposal[]; tasks: Task[] }) {
   return <div className="project-list">{proposals.length ? proposals.map((proposal) => <article className="proposal-card" key={proposal.id}><span className="status accepted">Принято</span><h3>{tasks.find((task) => task.id === proposal.task_id)?.title || 'Проект'}</h3><p>{proposal.idea}</p><small>Срок: {proposal.deadline}</small></article>) : <div className="empty-state">Пока нет принятых проектов. Посмотрите задачи в каталоге и отправьте предложение.</div>}</div>;
 }

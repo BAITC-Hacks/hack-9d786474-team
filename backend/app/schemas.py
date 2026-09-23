@@ -84,6 +84,9 @@ class TeamRead(BaseModel):
     description: str
     members: list
     contacts: dict
+    interests: list[str]
+    skills: list[str]
+    technologies: list[str]
 
 
 class ProposalCreate(BaseModel):
