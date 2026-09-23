@@ -20,6 +20,7 @@ class Task(Base):
     business_contact: Mapped[str] = mapped_column(Text, default="")
     interaction_format: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(20), default="draft")
+    confirmed: Mapped[bool] = mapped_column(default=False)
     rating_total: Mapped[int] = mapped_column(Integer, default=0)
     rating_breakdown: Mapped[dict] = mapped_column(JSON, default=dict)
     missing_fields: Mapped[list] = mapped_column(JSON, default=list)
