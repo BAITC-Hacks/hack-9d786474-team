@@ -39,6 +39,7 @@ codex 2:
 - Added idempotent demo profile seed: 23 business profiles and 35 freelancer profiles. Existing five Team records remain the proposal identity used by the canonical proposal API.
 - Role selection is a demo-only localStorage choice between demo-business-1 and demo-freelancer-1; it changes navigation, dashboard, profile view, and available actions. Profile edits persist through the Profile PATCH endpoint.
 - Verification after profile/frontend work: backend pytest 23 passed; npm install and npm run build passed. Existing Task/AI/rating/catalog/proposal endpoints were not changed. Remaining TODO: improve source text encoding and add browser automation tests when needed; no known MVP blocker.
+- Fixed frontend API proxy coverage: frontend/vite.config.ts now proxies /profiles to http://127.0.0.1:8000 alongside tasks, catalog, teams, and proposals. Before this fix /profiles/{id} fell through Vite SPA fallback and response.json() received index.html; after the fix the same URL is routed to backend and returns JSON (including JSON 404 from an old backend process).
 
 Review notes for Codex 1 (2026-09-23):
 - The TaskBuilder migration to POST /tasks/draft and PATCH /tasks/{task_id}, plus removal of the duplicate AI endpoint, aligns with the canonical Task API.
