@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from ..ai_service import analyze_draft, assemble_card
+from ..ai_service import AIServiceError, analyze_draft, assemble_card
 from ..database import get_db
 from ..models import Task, now_utc
 from ..schemas import DraftCreate, TaskPatch, TaskRead
@@ -22,7 +22,7 @@ def _recalculate(task: Task) -> None:
 def create_draft(payload: DraftCreate, db: Session = Depends(get_db)):
     try:
         stage1 = analyze_draft(payload.draft_text)
-    except (ValueError, RuntimeError) as exc:
+    except (AIServiceError, ValueError, RuntimeError) as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     task = Task(original_draft=payload.draft_text, stage1_result=stage1)
     _recalculate(task)
@@ -39,7 +39,10 @@ def update_task(task_id: str, payload: TaskPatch, db: Session = Depends(get_db))
     data = payload.model_dump(exclude_none=True)
     answers = data.pop("answers", None) or {}
     if answers:
-        data.update(assemble_card(task.original_draft, answers))
+        try:
+            data.update(assemble_card(task.original_draft, answers))
+        except (AIServiceError, ValueError, RuntimeError) as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
     data.pop("confirmed", None)
     for key, value in data.items():
         if hasattr(task, key):
