@@ -1,10 +1,10 @@
 import json
 import os
 from openai import OpenAI
+from .schemas import Stage1Result
 
 STAGE1_SYSTEM_PROMPT = """Ты — ассистент платформы геймификации бизнес-задач для студентов.
-Твоя цель — помочь представителю бизнеса превратить сырое описание
-потребности в четкое ТЗ.
+Твоя цель — помочь представителю бизнеса превратить сырое описание потребности в четкое ТЗ.
 
 Анализируй текст пользователя по следующим 7 критериям:
 
@@ -25,14 +25,40 @@ STAGE1_SYSTEM_PROMPT = """Ты — ассистент платформы гей�
 4. Ответ ВСЕГДА отдавай строго в формате JSON без каких-либо вводных слов или Markdown-оберток.
 
 Схема ответа JSON:
-{"analyzed_draft":"...","missing_aspects":["..."],"questions":[{"id":"q1","target_field":"...","question":"..."}]}"""
+{
+"analyzed_draft": "Краткое резюме того, что уже понятно из черновика",
+"missing_aspects": ["list_of_missing_field_names"],
+"questions": [
+{"id": "q1", "target_field": "data_and_materials", "question": "..."},
+{"id": "q2", "target_field": "success_criteria", "question": "..."},
+{"id": "q3", "target_field": "business_contact", "question": "..."}
+]
+}"""
 
-STAGE2_SYSTEM_PROMPT = """Ты — эксперт по структурированию бизнес-требований. Объедини
-первоначальный черновик и ответы пользователя. Используй только явно предоставленную
-информацию. Если данных нет, напиши "Не указано (требуется уточнение)".
-Ответ строго JSON с полями title, context_and_need, data_and_materials,
-expected_result, success_criteria, limitations, target_users, business_contact,
-interaction_format."""
+STAGE2_SYSTEM_PROMPT = """Ты — эксперт по структурированию бизнес-требований. Твоя задача —
+объединить первоначальный черновик задачи и ответы представителя бизнеса на уточняющие
+вопросы в единую структурированную карточку.
+
+СТРОГИЕ ПРАВИЛА:
+
+1. Заполни все поля и сгенерируй емкое название задачи (title).
+2. Используй ТОЛЬКО ту информацию, которую явно предоставил пользователь в черновике или ответах.
+3. Если по какому-то полю пользователь так и не предоставил информации, напиши в значении этого поля:
+"Не указано (требуется уточнение)". НЕ ПРИДУМЫВАЙ контакты, датасеты или метрики!
+4. Ответ отдавай СТРОГО в формате JSON.
+
+Схема ответа JSON:
+{
+"title": "...",
+"context_and_need": "...",
+"data_and_materials": "... или 'Не указано (требуется уточнение)'",
+"expected_result": "...",
+"success_criteria": "... или 'Не указано (требуется уточнение)'",
+"limitations": "... или 'Не указано (требуется уточнение)'",
+"target_users": "...",
+"business_contact": "... или 'Не указано (требуется уточнение)'",
+"interaction_format": "... или 'Не указано (требуется уточнение)'"
+}"""
 
 def _stub(draft: str) -> dict:
     return {
@@ -75,12 +101,16 @@ def assemble_card(draft: str, answers: dict[str, str]) -> dict:
         raise RuntimeError("OPENAI_API_KEY не задан при USE_AI_STUB=false")
     client = OpenAI(api_key=api_key)
     payload = json.dumps({"draft": draft, "answers": answers}, ensure_ascii=False)
-    response = client.chat.completions.create(model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"), temperature=0,
-        response_format={"type": "json_object"}, messages=[{"role": "system", "content": STAGE2_SYSTEM_PROMPT}, {"role": "user", "content": payload}])
+    response = client.chat.completions.create(
+        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"), temperature=0,
+        response_format={"type": "json_object"},
+        messages=[{"role": "system", "content": STAGE2_SYSTEM_PROMPT}, {"role": "user", "content": payload}],
+    )
     raw = response.choices[0].message.content or ""
     try:
         data = json.loads(raw)
-        required = ["title","context_and_need","data_and_materials","expected_result","success_criteria","limitations","target_users","business_contact","interaction_format"]
+        required = ["title", "context_and_need", "data_and_materials", "expected_result", "success_criteria",
+                    "limitations", "target_users", "business_contact", "interaction_format"]
         if any(key not in data for key in required):
             raise ValueError("отсутствуют обязательные поля")
         return data
