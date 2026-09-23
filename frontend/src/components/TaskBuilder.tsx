@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-type TaskStatus = 'draft' | 'working' | 'ready' | 'priority';
+export type TaskStatus = 'draft' | 'working' | 'ready' | 'priority';
 
 type Stage1Question = {
   id: string;
@@ -8,7 +8,7 @@ type Stage1Question = {
   question: string;
 };
 
-type Task = {
+export type Task = {
   id: string;
   title: string;
   context_and_need: string;
