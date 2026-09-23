@@ -24,7 +24,7 @@ def create_draft(payload: DraftCreate, db: Session = Depends(get_db)):
         stage1 = analyze_draft(payload.draft_text)
     except (AIServiceError, ValueError, RuntimeError) as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
-    task = Task(original_draft=payload.draft_text, stage1_result=stage1)
+    task = Task(original_draft=payload.draft_text, stage1_result=stage1, confirmed=False)
     _recalculate(task)
     db.add(task)
     db.commit()
@@ -37,6 +37,7 @@ def update_task(task_id: str, payload: TaskPatch, db: Session = Depends(get_db))
     if not task:
         raise HTTPException(status_code=404, detail="Задача не найдена")
     data = payload.model_dump(exclude_none=True)
+    task.confirmed = payload.confirmed
     answers = data.pop("answers", None) or {}
     if answers:
         try:
