@@ -6,6 +6,21 @@ from .schemas import CARD_FIELDS, UNKNOWN_VALUE, Stage1Result, TaskField
 class AIServiceError(RuntimeError):
     """Expected failure while calling or validating the external AI service."""
 
+
+def _openai_client(api_key: str) -> OpenAI:
+    kwargs = {"api_key": api_key}
+    base_url = os.getenv("OPENAI_BASE_URL", "").strip()
+    if base_url:
+        kwargs["base_url"] = base_url
+    return OpenAI(**kwargs)
+
+
+def _model_name() -> str:
+    model = os.getenv("OPENAI_MODEL", "").strip()
+    if not model:
+        raise AIServiceError("OPENAI_MODEL не задан при USE_AI_STUB=false")
+    return model
+
 STAGE1_SYSTEM_PROMPT = """Ты — ассистент платформы геймификации бизнес-задач для студентов.
 Твоя цель — помочь представителю бизнеса превратить сырое описание потребности в четкое ТЗ.
 
@@ -77,7 +92,7 @@ def _stub(draft: str) -> dict:
 def _call(client: OpenAI, messages: list[dict]) -> str:
     try:
         response = client.chat.completions.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            model=_model_name(),
             temperature=0,
             response_format={"type": "json_object"},
             messages=messages,
@@ -93,7 +108,7 @@ def analyze_draft(draft: str) -> dict:
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise AIServiceError("OPENAI_API_KEY не задан при USE_AI_STUB=false")
-    raw = _call(OpenAI(api_key=api_key), [
+    raw = _call(_openai_client(api_key), [
         {"role": "system", "content": STAGE1_SYSTEM_PROMPT},
         {"role": "user", "content": draft},
     ])
@@ -138,7 +153,7 @@ def assemble_card(draft: str, answers: dict[TaskField, str]) -> dict:
     if not api_key:
         raise AIServiceError("OPENAI_API_KEY не задан при USE_AI_STUB=false")
     payload = json.dumps({"draft": draft, "answers": answers}, ensure_ascii=False)
-    raw = _call(OpenAI(api_key=api_key), [
+    raw = _call(_openai_client(api_key), [
         {"role": "system", "content": STAGE2_SYSTEM_PROMPT},
         {"role": "user", "content": payload},
     ])

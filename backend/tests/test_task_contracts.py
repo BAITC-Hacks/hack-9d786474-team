@@ -2,6 +2,7 @@ import json
 import pytest
 from pydantic import ValidationError
 
+from app import ai_service
 from app.ai_service import AIServiceError, _call, _validate_stage2, analyze_draft
 from app.models import Task
 from app.schemas import DraftCreate, Stage1Result, TaskPatch
@@ -96,6 +97,31 @@ def test_confirmed_defaults_false_and_can_be_explicit():
 
 def test_ai_service_error_type_exists():
     assert issubclass(AIServiceError, RuntimeError)
+
+
+def test_openai_client_uses_configured_base_url_and_model(monkeypatch):
+    captured = {}
+
+    class FakeClient:
+        pass
+
+    def fake_openai(**kwargs):
+        captured.update(kwargs)
+        return FakeClient()
+
+    monkeypatch.setattr(ai_service, "OpenAI", fake_openai)
+    monkeypatch.setenv("OPENAI_API_KEY", "lm-studio")
+    monkeypatch.setenv("OPENAI_BASE_URL", "http://127.0.0.1:1234/v1")
+    monkeypatch.setenv("OPENAI_MODEL", "qwen/qwen3-vl-8b")
+
+    client = ai_service._openai_client("lm-studio")
+
+    assert client is not None
+    assert captured == {
+        "api_key": "lm-studio",
+        "base_url": "http://127.0.0.1:1234/v1",
+    }
+    assert ai_service._model_name() == "qwen/qwen3-vl-8b"
 
 
 def test_external_ai_exception_is_wrapped():
