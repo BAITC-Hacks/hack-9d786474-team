@@ -8,6 +8,9 @@ codex 1:
 - Task.confirmed is now persisted; POST creates false, answer PATCH sends false, and only explicit confirmation PATCH can set true.
 - Codex 2: do not create a second Task/AI/rating contract; consume the existing snake_case Task API.
 - Integration note: run backend tests before frontend integration; confirmed is backend-persisted and never AI-generated.
+- Fixed the ai_service.py/test mismatch: _validate_stage2(raw) now validates JSON object shape, allowed fields, string values, title length, and rejects unknown/computed fields; provider exceptions are wrapped as AIServiceError.
+- Codex 2's latest RatingWidget consumes backend rating_breakdown/status correctly and does not overlap backend files.
+- Existing frontend note remains: TaskBuilder currently sends the four agreed answer keys; answers for other allowed target fields are not sent and require a separate integration decision.
 
 codex 2:
 - Owns catalog, proposals, and business selection.
