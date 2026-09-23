@@ -147,7 +147,10 @@ def test_catalog_teams_and_proposal_selection_flow():
     assert catalog.status_code == 200
     assert catalog.json()
     assert all(item["confirmed"] for item in catalog.json())
-    assert len([item for item in catalog.json() if item["id"].startswith("demo-task-")]) >= 5
+    demo_tasks = [item for item in catalog.json() if item["id"].startswith("demo-task-")]
+    assert len(demo_tasks) >= 5
+    assert all(item["original_draft"].strip() and item["title"].strip() for item in demo_tasks)
+    assert {35, 60, 80, 100}.issubset({item["rating_total"] for item in demo_tasks})
 
     teams = client.get("/teams")
     assert teams.status_code == 200
