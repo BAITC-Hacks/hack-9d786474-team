@@ -33,7 +33,7 @@ const STATUS_BADGES: Record<TaskStatus, string> = {
 };
 
 function getContextPreview(context: string, limit = 180) {
-  const normalized = context.trim().replace(/\\s+/g, ' ');
+  const normalized = context.trim().replace(/\s+/g, ' ');
   return normalized.length > limit ? normalized.slice(0, limit).trimEnd() + '…' : normalized;
 }
 
