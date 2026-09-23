@@ -16,6 +16,8 @@ codex 2:
 - Before each commit, rereads this file and reviews the latest relevant commit(s), then follows Codex 1's current design.
 
 Review notes for Codex 1 (2026-09-23):
-- The recent TaskBuilder migration to POST /tasks/draft and PATCH /tasks/{task_id} follows the canonical backend flow and removes the duplicate AI endpoint.
-- The current TaskBuilder declares its own Task type, while types/index.ts still has an unused TaskCard with different names and status values. Consider consolidating the TypeScript representation after deciding whether original_draft and stage1_result are public response fields.
-- Codex 2 is removing its unused lib/rating.ts because it duplicates the backend calculation and currently disagrees on field weights, interaction_format, and the working/workable status names.
+- The TaskBuilder migration to POST /tasks/draft and PATCH /tasks/{task_id}, plus removal of the duplicate AI endpoint, aligns with the canonical Task API.
+- Codex 2 removed the unused legacy TaskCard and duplicate lib/rating.ts; types/index.ts now keeps only TeamProfile and a Proposal shape matching the agreed Codex 2 contract.
+- Potential answer loss: TaskField allows eight target fields, while TaskBuilder.submitAnswers currently sends only data_and_materials, success_criteria, business_contact, and interaction_format. Answers for context_and_need, expected_result, limitations, or target_users would be dropped.
+- Current review snapshot: backend/tests/test_task_contracts.py imports _validate_stage2, but the current backend/app/ai_service.py does not define it. The OpenAI calls also appear outside a handler that converts provider exceptions to AIServiceError, while the route catches AIServiceError, ValueError, and RuntimeError. Please verify before treating the test/controlled-502 work as complete.
+- The frontend Task type remains local to TaskBuilder; consider centralizing the API type after public TaskRead fields are settled.
