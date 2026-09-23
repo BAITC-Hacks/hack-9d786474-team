@@ -9,6 +9,11 @@ def now_utc() -> datetime:
 
 class Task(Base):
     __tablename__ = "tasks"
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("confirmed", False)
+        super().__init__(**kwargs)
+
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     title: Mapped[str] = mapped_column(String(100), default="")
     context_and_need: Mapped[str] = mapped_column(Text, default="")
@@ -20,7 +25,7 @@ class Task(Base):
     business_contact: Mapped[str] = mapped_column(Text, default="")
     interaction_format: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(20), default="draft")
-    confirmed: Mapped[bool] = mapped_column(default=False, insert_default=False)
+    confirmed: Mapped[bool] = mapped_column(default=False, nullable=False)
     rating_total: Mapped[int] = mapped_column(Integer, default=0)
     rating_breakdown: Mapped[dict] = mapped_column(JSON, default=dict)
     missing_fields: Mapped[list] = mapped_column(JSON, default=list)
