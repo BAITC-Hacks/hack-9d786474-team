@@ -1,7 +1,10 @@
 import json
 import os
 from openai import OpenAI
-from .schemas import Stage1Result
+from .schemas import CARD_FIELDS, UNKNOWN_VALUE, Stage1Result, TaskField
+
+class AIServiceError(RuntimeError):
+    """Expected failure while calling or validating the external AI service."""
 
 STAGE1_SYSTEM_PROMPT = """Ты — ассистент платформы геймификации бизнес-задач для студентов.
 Твоя цель — помочь представителю бизнеса превратить сырое описание потребности в четкое ТЗ.
