@@ -2,7 +2,7 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from app.ai_service import AIServiceError, _validate_stage2, analyze_draft, assemble_card
+from app.ai_service import AIServiceError, _call, _validate_stage2, analyze_draft
 from app.models import Task
 from app.schemas import DraftCreate, Stage1Result, TaskPatch
 from app.task_rating import calculate_task_rating
@@ -96,3 +96,15 @@ def test_confirmed_defaults_false_and_can_be_explicit():
 
 def test_ai_service_error_type_exists():
     assert issubclass(AIServiceError, RuntimeError)
+
+
+def test_external_ai_exception_is_wrapped():
+    class BrokenCompletions:
+        def create(self, **kwargs):
+            raise TimeoutError("network timeout")
+
+    class BrokenClient:
+        chat = type("Chat", (), {"completions": BrokenCompletions()})()
+
+    with pytest.raises(AIServiceError):
+        _call(BrokenClient(), [])
