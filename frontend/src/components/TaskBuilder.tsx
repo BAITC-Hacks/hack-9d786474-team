@@ -130,7 +130,12 @@ export function TaskBuilder({ onConfirm }: TaskBuilderProps) {
     setError('');
     try {
       const updated = await requestJson<Task>(`/tasks/${taskId}`, {
-        answers,
+        answers: {
+          data_and_materials: answers.data_and_materials ?? '',
+          success_criteria: answers.success_criteria ?? '',
+          business_contact: answers.business_contact ?? '',
+          interaction_format: answers.interaction_format ?? '',
+        },
         confirmed: false,
       });
       setTask(updated);
